@@ -2,6 +2,45 @@
     "api": {
         "baseUrl": "https://api.hospital.com/v1",
         "endpoints": {
+            "auth": {
+                "POST /auth/login": {
+                    "description": "Authenticate user and get access token",
+                    "requestBody": {
+                        "email": "string",
+                        "password": "string"
+                    },
+                    "response": {
+                        "status": 200,
+                        "data": {
+                            "accessToken": "string",
+                            "refreshToken": "string",
+                            "expiresIn": 3600
+                        }
+                    }
+                },
+                "POST /auth/refresh": {
+                    "description": "Refresh access token",
+                    "requestBody": {
+                        "refreshToken": "string"
+                    },
+                    "response": {
+                        "status": 200,
+                        "data": {
+                            "accessToken": "string",
+                            "expiresIn": 3600
+                        }
+                    }
+                },
+                "POST /auth/logout": {
+                    "description": "Invalidate current session",
+                    "response": {
+                        "status": 200,
+                        "data": {
+                            "message": "Logged out successfully"
+                        }
+                    }
+                }
+            },
             "patients": {
                 "GET /patients": {
                     "description": "Get list of all patients",
