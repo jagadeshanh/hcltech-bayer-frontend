@@ -1,9 +1,11 @@
 "use client";
-
+import { registerUser } from "@/api/auth";
 import Link from "next/link";
 import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -18,7 +20,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormErrors({
       fullName: "",
@@ -66,9 +68,33 @@ export default function RegisterPage() {
       return;
     }
 
-    // Proceed with registration logic here
-    setIsLoading(true);
-    // Add your registration API call here
+    try {
+      setIsLoading(true);
+      const response = await registerUser(formData);
+
+      if (response.statusCode !== 200) {
+        throw new Error(response.message || "Registration failed");
+      }
+
+      // Registration successful
+      router.push("/login?registered=true");
+    } catch (error: any) {
+      // Handle specific error cases
+      if (error.message.includes("Email already exists")) {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: "This email is already registered",
+        }));
+      } else {
+        // Set a generic error message
+        setFormErrors((prev) => ({
+          ...prev,
+          email: error.message || "Registration failed. Please try again.",
+        }));
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,8 +1,9 @@
 "use client";
-
+import { login } from "@/api/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useContext } from "react";
+import { UserContext } from "@/context/UserContext";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,13 +16,14 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+  const { setUser } = useContext(UserContext);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormErrors({
       email: "",
@@ -60,12 +62,37 @@ export default function LoginPage() {
 
     // Proceed with login logic here
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await login(formData.email, formData.password);
+      console.log(response);
+      if (response.statusCode === 200) {
+        // Store access token in localStorage
+        localStorage.setItem("accessToken", response.data.accessToken);
+
+        // Store user data in localStorage for persistence
+        localStorage.setItem("userData", JSON.stringify(response.data.user));
+
+        // Update the user context
+        setUser(response.data.user);
+
+        // Navigate to dashboard
+        router.push("/dashboard");
+      } else {
+        // Handle login error
+        setFormErrors((prev) => ({
+          ...prev,
+          email: response.message || "Login failed",
+        }));
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      setFormErrors((prev) => ({
+        ...prev,
+        email: "An error occurred. Please try again.",
+      }));
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-      // Handle successful login
-      console.log("Login successful", formData);
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +256,17 @@ export default function LoginPage() {
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
                 Register here
+              </Link>
+            </p>
+          </div>
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              <Link
+                href="/"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
+                Home
               </Link>
             </p>
           </div>
