@@ -1,7 +1,7 @@
 "use client";
 import { registerUser } from "@/api/auth";
 import Link from "next/link";
-import { useState, FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -20,7 +20,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormErrors({
       fullName: "",
@@ -78,18 +78,16 @@ export default function RegisterPage() {
 
       // Registration successful
       router.push("/login?registered=true");
-    } catch (error: any) {
-      // Handle specific error cases
-      if (error.message.includes("Email already exists")) {
-        setFormErrors((prev) => ({
-          ...prev,
-          email: "This email is already registered",
-        }));
-      } else {
-        // Set a generic error message
+    } catch (error: unknown) {
+      if (error instanceof Error) {
         setFormErrors((prev) => ({
           ...prev,
           email: error.message || "Registration failed. Please try again.",
+        }));
+      } else {
+        setFormErrors((prev) => ({
+          ...prev,
+          email: "An unexpected error occurred",
         }));
       }
     } finally {

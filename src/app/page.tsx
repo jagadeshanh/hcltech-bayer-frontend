@@ -15,7 +15,7 @@ export default function Home() {
   if (!isHealthy) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div>Error: System not operational</div>
+        <div className="text-red-600">{error || "System not operational"}</div>
       </div>
     );
   }

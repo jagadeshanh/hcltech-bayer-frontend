@@ -37,7 +37,7 @@ export default function BookingPage() {
       patientName: string;
     };
   }>({ show: false });
-  const [fetchError, setFetchError] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   // Add useEffect to fetch doctors
   useEffect(() => {
@@ -48,12 +48,12 @@ export default function BookingPage() {
         if (Array.isArray(response?.data)) {
           setDoctors(response?.data);
         } else {
-          setFetchError("Invalid response format from server");
+          setError("Invalid response format from server");
           setDoctors([]);
         }
       } catch (error) {
         console.error("Error fetching doctors:", error);
-        setFetchError("Failed to fetch doctors");
+        setError("Failed to fetch doctors");
         setDoctors([]);
       }
     };
@@ -148,6 +148,11 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded">
+            {error}
+          </div>
+        )}
         {appointmentSuccess.show && appointmentSuccess.details && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center mb-2">

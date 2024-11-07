@@ -1,5 +1,14 @@
 import api from "./index";
 
+export interface Appointment {
+  _id: string;
+  date: string;
+  time: string;
+  docName?: string;
+  patientName?: string;
+  reason: string;
+}
+
 export const login = async (email: string, password: string) => {
   try {
     const response = await api.post("/users/login", { email, password });
@@ -24,7 +33,7 @@ export const registerUser = async (userData: {
   }
 };
 
-export const fetchAppointments = async (): Promise<any> => {
+export const fetchAppointments = async (): Promise<Appointment[]> => {
   const token = localStorage.getItem("accessToken");
   const response = await api.get("/appointments", {
     headers: {
@@ -34,7 +43,7 @@ export const fetchAppointments = async (): Promise<any> => {
   if (response.status !== 200) {
     throw new Error("Failed to fetch appointments");
   }
-  return response.data;
+  return response.data as Appointment[];
 };
 
 interface AppointmentData {
@@ -59,4 +68,11 @@ export const createAppointment = async (appointmentData: AppointmentData) => {
     throw new Error("Failed to create appointment");
   }
   return response.data;
+};
+
+export const handleApiError = (error: Error | unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "An unexpected error occurred";
 };

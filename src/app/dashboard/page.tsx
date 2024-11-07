@@ -4,17 +4,7 @@ import { useState, useEffect, useRef, useContext } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserContext } from "@/context/UserContext";
-import { fetchAppointments } from "@/api/auth";
-
-// Add interface for Appointment type
-interface Appointment {
-  _id: string;
-  date: string;
-  time: string;
-  docName?: string;
-  patientName?: string;
-  reason: string;
-}
+import { fetchAppointments, type Appointment } from "@/api/auth";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -221,7 +211,7 @@ export default function Dashboard() {
     return (
       <>
         <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <h2 className="font-semibold mb-4">Today's Appointments</h2>
+          <h2 className="font-semibold mb-4">Today&apos;s Appointments</h2>
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
               <tr>
