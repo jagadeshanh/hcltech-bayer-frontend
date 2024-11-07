@@ -1,5 +1,7 @@
 "use client";
 
+import { createAppointment, fetchDoctorsWithSlots } from "@/api/auth";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 // Update interface for doctor type
@@ -35,20 +37,24 @@ export default function BookingPage() {
       patientName: string;
     };
   }>({ show: false });
+  const [fetchError, setFetchError] = useState<string>("");
 
   // Add useEffect to fetch doctors
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:8000/api/v1/users/doctors/slots"
-        );
-        const data = await response.json();
-        if (data.success) {
-          setDoctors(data.data);
+        const response = await fetchDoctorsWithSlots();
+        console.log(response);
+        if (Array.isArray(response?.data)) {
+          setDoctors(response?.data);
+        } else {
+          setFetchError("Invalid response format from server");
+          setDoctors([]);
         }
       } catch (error) {
         console.error("Error fetching doctors:", error);
+        setFetchError("Failed to fetch doctors");
+        setDoctors([]);
       }
     };
     fetchDoctors();
@@ -104,30 +110,18 @@ export default function BookingPage() {
 
         const appointmentData = {
           docName: selectedDoc.name,
-          docId: selectedDoc.docId || "temp-doc-id",
+          docId: selectedDoc.docId,
           date: selectedDate,
           time: timeOnly,
           reason: reasonForVisit,
         };
-
         console.log("Sending appointment data:", appointmentData);
-
-        const response = await fetch(
-          "http://localhost:8000/api/v1/appointments",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(appointmentData),
-          }
-        );
-
-        const data = await response.json();
-        if (data.message === "Appointment created successfully") {
+        const response = await createAppointment(appointmentData);
+        console.log(response);
+        if (response.message === "Appointment created successfully") {
           setAppointmentSuccess({
             show: true,
-            details: data.appointment,
+            details: response.appointment,
           });
 
           // Clear form
@@ -229,11 +223,12 @@ export default function BookingPage() {
               } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500`}
             >
               <option value="">-- Select a Doctor --</option>
-              {doctors.map((doctor, index) => (
-                <option key={index} value={doctor.name}>
-                  {doctor.name} - {doctor.specialization}
-                </option>
-              ))}
+              {doctors &&
+                doctors.map((doctor, index) => (
+                  <option key={index} value={doctor.name}>
+                    {doctor.name} - {doctor.specialization}
+                  </option>
+                ))}
             </select>
             {formErrors.doctor && (
               <p className="text-red-500 text-sm">{formErrors.doctor}</p>
@@ -333,6 +328,15 @@ export default function BookingPage() {
             Book Appointment
           </button>
         </form>
+
+        <div className="text-center mt-4">
+          <Link
+            href="/"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     </div>
   );

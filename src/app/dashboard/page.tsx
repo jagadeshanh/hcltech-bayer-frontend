@@ -4,6 +4,17 @@ import { useState, useEffect, useRef, useContext } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserContext } from "@/context/UserContext";
+import { fetchAppointments } from "@/api/auth";
+
+// Add interface for Appointment type
+interface Appointment {
+  _id: string;
+  date: string;
+  time: string;
+  docName?: string;
+  patientName?: string;
+  reason: string;
+}
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,6 +22,7 @@ export default function Dashboard() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { user } = useContext(UserContext);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
@@ -37,6 +49,19 @@ export default function Dashboard() {
       router.push("/login");
     }
   }, [router]);
+
+  useEffect(() => {
+    const getAppointments = async () => {
+      try {
+        const data = await fetchAppointments();
+        setAppointments(data);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+      }
+    };
+
+    getAppointments();
+  }, []);
 
   // Conditional sidebar navigation based on user role
   const renderSidebarNav = () => {
@@ -170,10 +195,24 @@ export default function Dashboard() {
                 <th className="border border-gray-300 p-2">Date & Time</th>
                 <th className="border border-gray-300 p-2">Doctor</th>
                 <th className="border border-gray-300 p-2">Reason</th>
-                <th className="border border-gray-300 p-2">Status</th>
               </tr>
             </thead>
-            <tbody>{/* Add your appointments data here */}</tbody>
+            <tbody>
+              {appointments.map((appointment) => (
+                <tr key={appointment._id}>
+                  <td className="border border-gray-300 p-2">
+                    {new Date(appointment.date).toLocaleDateString()}{" "}
+                    {appointment.time}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {appointment.docName}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {appointment.reason}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       );
@@ -182,7 +221,7 @@ export default function Dashboard() {
     return (
       <>
         <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <h2 className="font-semibold mb-4">Todays Appointments</h2>
+          <h2 className="font-semibold mb-4">Today's Appointments</h2>
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
               <tr>
@@ -192,57 +231,19 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="border border-gray-300 p-2">10:00 AM</td>
-                <td className="border border-gray-300 p-2">John Doe</td>
-                <td className="border border-gray-300 p-2">Check-up</td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 p-2">11:30 AM</td>
-                <td className="border border-gray-300 p-2">Jane Smith</td>
-                <td className="border border-gray-300 p-2">Consultation</td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 p-2">1:00 PM</td>
-                <td className="border border-gray-300 p-2">Alice Johnson</td>
-                <td className="border border-gray-300 p-2">Follow-up</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <h2 className="font-semibold mb-4">Recent Patients</h2>
-          <table className="min-w-full border-collapse border border-gray-300">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 p-2">Name</th>
-                <th className="border border-gray-300 p-2">Last Visit</th>
-                <th className="border border-gray-300 p-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border border-gray-300 p-2">John Doe</td>
-                <td className="border border-gray-300 p-2">10:00 AM</td>
-                <td className="border border-gray-300 p-2">
-                  <button className="text-blue-500">View Profile</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 p-2">John Doe</td>
-                <td className="border border-gray-300 p-2">10:00 AM</td>
-                <td className="border border-gray-300 p-2">
-                  <button className="text-blue-500">View Profile</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 p-2">John Doe</td>
-                <td className="border border-gray-300 p-2">10:00 AM</td>
-                <td className="border border-gray-300 p-2">
-                  <button className="text-blue-500">View Profile</button>
-                </td>
-              </tr>
+              {appointments.map((appointment) => (
+                <tr key={appointment._id}>
+                  <td className="border border-gray-300 p-2">
+                    {appointment.time}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {appointment.patientName}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {appointment.reason}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
