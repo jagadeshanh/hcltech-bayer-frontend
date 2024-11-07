@@ -1,23 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const doctors = [
-  { id: 1, name: "Dr. Smith" },
-  { id: 2, name: "Dr. Johnson" },
-  { id: 3, name: "Dr. Lee" },
-];
-
-const timeSlots = [
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "01:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-];
+// Update interface for doctor type
+interface Doctor {
+  name: string;
+  specialization: string;
+  availableTimeSlots: string[];
+  docId: string;
+}
 
 export default function BookingPage() {
+  // Update state definitions
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -29,8 +24,38 @@ export default function BookingPage() {
     time: "",
     reason: "",
   });
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [appointmentSuccess, setAppointmentSuccess] = useState<{
+    show: boolean;
+    details?: {
+      docName: string;
+      date: string;
+      time: string;
+      reason: string;
+      patientName: string;
+    };
+  }>({ show: false });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Add useEffect to fetch doctors
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8000/api/v1/users/doctors/slots"
+        );
+        const data = await response.json();
+        if (data.success) {
+          setDoctors(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  // Update handleSubmit function
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors({
       doctor: "",
@@ -71,19 +96,113 @@ export default function BookingPage() {
     }
 
     if (isValid) {
-      console.log("Form submitted:", {
-        selectedDoctor,
-        selectedDate,
-        selectedTime,
-        reasonForVisit,
-        additionalNotes,
-      });
+      try {
+        const selectedDoc = doctors.find((doc) => doc.name === selectedDoctor);
+        if (!selectedDoc) return;
+
+        const timeOnly = selectedTime.split(" - ")[0];
+
+        const appointmentData = {
+          docName: selectedDoc.name,
+          docId: selectedDoc.docId || "temp-doc-id",
+          date: selectedDate,
+          time: timeOnly,
+          reason: reasonForVisit,
+        };
+
+        console.log("Sending appointment data:", appointmentData);
+
+        const response = await fetch(
+          "http://localhost:8000/api/v1/appointments",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(appointmentData),
+          }
+        );
+
+        const data = await response.json();
+        if (data.message === "Appointment created successfully") {
+          setAppointmentSuccess({
+            show: true,
+            details: data.appointment,
+          });
+
+          // Clear form
+          setSelectedDoctor("");
+          setSelectedDate("");
+          setSelectedTime("");
+          setReasonForVisit("");
+          setAdditionalNotes("");
+        }
+      } catch (error) {
+        console.error("Error booking appointment:", error);
+      }
     }
+  };
+
+  // Update doctor selection to update available time slots
+  const handleDoctorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const doctorName = e.target.value;
+    setSelectedDoctor(doctorName);
+    const selectedDoc = doctors.find((doc) => doc.name === doctorName);
+    setTimeSlots(selectedDoc?.availableTimeSlots || []);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        {appointmentSuccess.show && appointmentSuccess.details && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center mb-2">
+              <svg
+                className="h-5 w-5 text-green-500 mr-2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M5 13l4 4L19 7"></path>
+              </svg>
+              <h3 className="text-green-800 font-medium">
+                Appointment Booked Successfully!
+              </h3>
+            </div>
+            <div className="text-sm text-green-700 space-y-1">
+              <p>
+                <span className="font-medium">Doctor:</span>{" "}
+                {appointmentSuccess.details.docName}
+              </p>
+              <p>
+                <span className="font-medium">Date:</span>{" "}
+                {new Date(appointmentSuccess.details.date).toLocaleDateString()}
+              </p>
+              <p>
+                <span className="font-medium">Time:</span>{" "}
+                {appointmentSuccess.details.time}
+              </p>
+              <p>
+                <span className="font-medium">Reason:</span>{" "}
+                {appointmentSuccess.details.reason}
+              </p>
+              <p>
+                <span className="font-medium">Patient:</span>{" "}
+                {appointmentSuccess.details.patientName}
+              </p>
+            </div>
+            <button
+              onClick={() => setAppointmentSuccess({ show: false })}
+              className="mt-3 text-sm text-green-600 hover:text-green-800"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col items-center">
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Book an Appointment
@@ -104,15 +223,15 @@ export default function BookingPage() {
             <select
               id="doctor"
               value={selectedDoctor}
-              onChange={(e) => setSelectedDoctor(e.target.value)}
+              onChange={handleDoctorChange}
               className={`mt-1 block w-full border p-2 ${
                 formErrors.doctor ? "border-red-500" : "border-gray-300"
               } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500`}
             >
               <option value="">-- Select a Doctor --</option>
-              {doctors.map((doctor) => (
-                <option key={doctor.id} value={doctor.id}>
-                  {doctor.name}
+              {doctors.map((doctor, index) => (
+                <option key={index} value={doctor.name}>
+                  {doctor.name} - {doctor.specialization}
                 </option>
               ))}
             </select>
